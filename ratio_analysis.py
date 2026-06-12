@@ -12,12 +12,18 @@ income_statement = income_statement.iloc[:, :4]
 balance_sheet = stock.balance_sheet
 balance_sheet = balance_sheet.iloc[:, :4]
 
+cash_flow = stock.cashflow
+cash_flow = cash_flow.iloc[:, :4]
+
+print(cash_flow.index)
+
+
 #print(income_statement)
 #print(income_statement.index)
 #print(income_statement.columns)
 
 #print(balance_sheet)
-print(balance_sheet.index)
+#print(balance_sheet.index)
 #print(balance_sheet.columns)
 
 
@@ -88,7 +94,7 @@ data = {
     "Net Profit Margin": npm_percent,
     "Return on Assets": roa_percent,
     "Return on Equity": roe_percent,
-    "Retur on Capital Employed": roce_percent
+    "Return on Capital Employed": roce_percent
 }
 
 df = pd.DataFrame(data)
@@ -251,3 +257,58 @@ df = df.fillna("N/A")
 df = df.T
 df = df[df.columns[::-1]]
 print(df)
+
+
+print("\n\nValuation Ratios")
+print("")
+
+
+#  P/E Ratios
+
+trail_pe = stock.info["trailingPE"]
+forward_pe = stock.info["forwardPE"]
+
+# P/B Ratio
+
+price_tobook = stock.info["priceToBook"]
+
+# Price to Sales
+current_price = stock.info["currentPrice"]
+price_to_sales = current_price / revenue_per_share.iloc[-1]
+
+# Price to Cashflow Ratio
+operating_cashflow = cash_flow.loc["Operating Cash Flow"].sort_index()
+priceto_cashflow = current_price / (operating_cashflow.iloc[-1] / diluted_shares_outstanding.iloc[-1])
+
+# PEG Ratio
+
+peg = stock.info["pegRatio"]
+
+# Enterprise to EBITDA
+
+ev_ebitda = stock.info["enterpriseToEbitda"]
+
+# Dividend Yield
+
+dy = stock.info.get("dividendYield")
+
+if dy != None:
+    dy = f"{dy:.2%}"
+else:
+    dy = f"0.00%"
+
+
+data = {
+    "Trailing P/E Ratio": f"{trail_pe:.2f}",
+    "Forward P/E Ratio": f"{forward_pe:.2f}",
+    "P/B Ratio": f"{price_tobook:.2f}",
+    "Price to Sales": f"{price_to_sales:.2f}",
+    "Price to Cashflow": f"{priceto_cashflow:.2f}",
+    "PEG Ratio": f"{peg:.2f}",
+    "EV/EBITDA": f"{ev_ebitda:.2f}",
+    "Dividend Yield": dy
+}
+
+df = pd.DataFrame(data, index=["Current"])
+df = df.T
+print(df.to_string())
