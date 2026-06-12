@@ -13,11 +13,11 @@ balance_sheet = stock.balance_sheet
 balance_sheet = balance_sheet.iloc[:, :4]
 
 #print(income_statement)
-print(income_statement.index)
+#print(income_statement.index)
 #print(income_statement.columns)
 
 #print(balance_sheet)
-#print(balance_sheet.index)
+print(balance_sheet.index)
 #print(balance_sheet.columns)
 
 
@@ -109,20 +109,140 @@ current_ratio = (current_assets / current_liabilities).round(2)
 inventory = balance_sheet.loc["Inventory"].sort_index()
 quick_ratio = ((current_assets - inventory) / current_liabilities).round(2)
 
+
+
+data = {
+    "Current Ratio": current_ratio,
+    "Quick Ratio": quick_ratio
+}
+
+df = pd.DataFrame(data)
+df = df.replace(["nan%", "NaN", "nan"], "N/A")
+df = df.fillna("N/A")
+df = df.T
+df = df[df.columns[::-1]]
+print(df)
+
+print("\n\nLeverage Ratios")
+
+# Debt-to-Equity
+
+total_debt = balance_sheet.loc["Total Debt"].sort_index()
+debt_to_equity = (total_debt / shareholder_equity).round(2)
+
+
+# Debt to Assets
+
+debt_to_assets = (total_debt / total_assets).round(2)
+
+# Interest Cover
+
+interest_expense = income_statement.loc["Interest Expense"].sort_index()
+interest_cover = (operating_profit / interest_expense).round(2)
+interest_cover_x = interest_cover.map(lambda x: f"{x:.2f}x")
+
+# Debt to EBITDA
+
+debt_to_ebitda = total_debt / ebitda
+debt_to_ebitda_x = debt_to_ebitda.map(lambda x: f"{x:.2f}x")
+
+
+
+data = {
+    "Debt to Equity": debt_to_equity,
+    "Debt to Assets": debt_to_assets,
+    "Interest Cover": interest_cover_x,
+    "Debt to EBITDA": debt_to_ebitda_x
+}
+
+df = pd.DataFrame(data)
+df = df.replace(["nan%", "NaN", "nan"], "N/A")
+df = df.fillna("N/A")
+df = df.T
+df = df[df.columns[::-1]]
+print(df)
+
+print("\n\nEfficiency Ratios")
+
+# Recieveables Days
+
+accounts_recievables = balance_sheet.loc["Accounts Receivable"].sort_index()
+receivable_days = ((accounts_recievables / revenue) * 365).round(2)
+
+
+# Payables Days
+accounts_payables = balance_sheet.loc["Accounts Payable"].sort_index()
+cogs = income_statement.loc["Cost Of Revenue"].sort_index()
+payable_days = ((accounts_payables / cogs)* 365).round(2)
+
+# Inventory Days
+
+inventory_days = ((inventory / cogs) * 365).round(2)
+
+# Cash Conversion Cycle
+
+ccc = (inventory_days + receivable_days - payable_days).round(2)
+
 # Asset Turnover
 
 asset_turnover = (revenue / total_assets).round(2)
 
 # Inventory Turnover
 
-cogs = income_statement.loc["Cost Of Revenue"].sort_index()
 inventory_turnover = (cogs / inventory).round(2)
 
+
 data = {
-    "Current Ratio": current_ratio,
-    "Quick Ratio": quick_ratio,
+    "Receivables Days": receivable_days,
+    "Payables Days": payable_days,
+    "Inventory Days": inventory_days,
+    "Cash Conversion Days": ccc,
     "Asset Turnover": asset_turnover,
     "Inventory Turnover": inventory_turnover
+}
+
+df = pd.DataFrame(data)
+df = df.replace(["nan%", "NaN", "nan"], "N/A")
+df = df.fillna("N/A")
+df = df.T
+df = df[df.columns[::-1]]
+print(df)
+
+print("\n\nPer Share")
+
+# Earnings per Share
+
+basic_eps = income_statement.loc["Basic EPS"].sort_index()
+diluted_eps = income_statement.loc["Diluted EPS"].sort_index()
+
+# Revenue per Share
+
+diluted_shares_outstanding = income_statement.loc["Diluted Average Shares"].sort_index()
+revenue_per_share = (revenue / diluted_shares_outstanding).round(2)
+
+# Book Value per Share
+
+bvps = (shareholder_equity / diluted_shares_outstanding).round(2)
+
+# Cash per Share
+
+cash_ce_sti = balance_sheet.loc["Cash Cash Equivalents And Short Term Investments"].sort_index()
+cash_per_share = (cash_ce_sti / diluted_shares_outstanding).round(2)
+
+# Total Debt per Share
+
+debt_per_share = (total_debt / diluted_shares_outstanding).round(2)
+
+
+
+
+data = {
+    "Basic EPS": basic_eps,
+    "Diluted EPS": diluted_eps,
+    "Revenue per Share": revenue_per_share,
+    "Book Value per Share": bvps,
+    "Cash per Share": cash_per_share,
+    "Total Debt per Share": debt_per_share
 }
 
 df = pd.DataFrame(data)
