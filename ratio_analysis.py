@@ -15,19 +15,6 @@ balance_sheet = balance_sheet.iloc[:, :4]
 cash_flow = stock.cashflow
 cash_flow = cash_flow.iloc[:, :4]
 
-print(cash_flow.index)
-
-
-#print(income_statement)
-#print(income_statement.index)
-#print(income_statement.columns)
-
-#print(balance_sheet)
-#print(balance_sheet.index)
-#print(balance_sheet.columns)
-
-
-
 
 # Revenue Growth
 
@@ -112,9 +99,12 @@ current_ratio = (current_assets / current_liabilities).round(2)
 
 # Quick Ratio
 
-inventory = balance_sheet.loc["Inventory"].sort_index()
-quick_ratio = ((current_assets - inventory) / current_liabilities).round(2)
-
+if "Inventory" in balance_sheet.index:
+    inventory = balance_sheet.loc["Inventory"].sort_index()
+    quick_ratio = ((current_assets - inventory) / current_liabilities).round(2)
+else:
+    inventory = None
+    quick_ratio = current_ratio
 
 
 data = {
@@ -181,30 +171,28 @@ accounts_payables = balance_sheet.loc["Accounts Payable"].sort_index()
 cogs = income_statement.loc["Cost Of Revenue"].sort_index()
 payable_days = ((accounts_payables / cogs)* 365).round(2)
 
-# Inventory Days
 
-inventory_days = ((inventory / cogs) * 365).round(2)
-
-# Cash Conversion Cycle
-
-ccc = (inventory_days + receivable_days - payable_days).round(2)
+if inventory is not None:
+    inventory_days = ((inventory / cogs) * 365).round(2)
+    ccc = (inventory_days + receivable_days - payable_days).round(2)
+    inventory_turnover = (cogs / inventory).round(2)
+else:
+    inventory_days = "N/A"
+    inventory_turnover = "N/A"
+    ccc = (receivable_days - payable_days).round(2)
 
 # Asset Turnover
 
 asset_turnover = (revenue / total_assets).round(2)
-
-# Inventory Turnover
-
-inventory_turnover = (cogs / inventory).round(2)
-
 
 data = {
     "Receivables Days": receivable_days,
     "Payables Days": payable_days,
     "Inventory Days": inventory_days,
     "Cash Conversion Days": ccc,
-    "Asset Turnover": asset_turnover,
-    "Inventory Turnover": inventory_turnover
+    "Inventory Turnover": inventory_turnover,
+    "Asset Turnover": asset_turnover
+    
 }
 
 df = pd.DataFrame(data)
@@ -218,8 +206,8 @@ print("\n\nPer Share")
 
 # Earnings per Share
 
-basic_eps = income_statement.loc["Basic EPS"].sort_index()
-diluted_eps = income_statement.loc["Diluted EPS"].sort_index()
+basic_eps = income_statement.loc["Basic EPS"].sort_index().round(2)
+diluted_eps = income_statement.loc["Diluted EPS"].sort_index().round(2)
 
 # Revenue per Share
 
@@ -265,12 +253,15 @@ print("")
 
 #  P/E Ratios
 
-trail_pe = stock.info["trailingPE"]
-forward_pe = stock.info["forwardPE"]
+trail_pe = stock.info.get("trailingPE")
+trail_pe = f"{trail_pe:.2f}" if trail_pe is not None else "N/A"
+forward_pe = stock.info.get("forwardPE")
+forward_pe = f"{forward_pe:.2f}" if forward_pe is not None else "N/A"
 
 # P/B Ratio
 
-price_tobook = stock.info["priceToBook"]
+price_tobook = stock.info.get("priceToBook")
+price_tobook = f"{price_tobook:.2f}" if price_tobook is not None else "N/A"
 
 # Price to Sales
 current_price = stock.info["currentPrice"]
@@ -282,33 +273,42 @@ priceto_cashflow = current_price / (operating_cashflow.iloc[-1] / diluted_shares
 
 # PEG Ratio
 
-peg = stock.info["pegRatio"]
+peg = stock.info.get("pegRatio")
+peg = f"{peg:.2f}" if peg is not None else "N/A"
 
 # Enterprise to EBITDA
 
-ev_ebitda = stock.info["enterpriseToEbitda"]
+ev_ebitda = stock.info.get("enterpriseToEbitda")
+ev_ebitda = f"{ev_ebitda:.2f}" if ev_ebitda is not None else "N/A"
 
 # Dividend Yield
 
-dy = stock.info.get("dividendYield")
+dy_pct = stock.info.get("dividendYield")
+dy_dec = stock.info.get("trailingAnnualDividendYield")
 
-if dy != None:
-    dy = f"{dy:.2%}"
+
+
+if dy_pct != None:
+    dy = f"{dy_pct:.2f}%"
+elif dy_dec != None:
+    dy = f"{dy_dec:.2%}"
 else:
-    dy = f"0.00%"
+    rate = (stock.info.get("dividendRate") or stock.info.get("trailingAnnualDividendRate"))
+    dy = f"{rate / current_price:.2%}" if rate is not None and current_price is not None else "N/A"
 
 
 data = {
-    "Trailing P/E Ratio": f"{trail_pe:.2f}",
-    "Forward P/E Ratio": f"{forward_pe:.2f}",
-    "P/B Ratio": f"{price_tobook:.2f}",
+    "Trailing P/E Ratio": trail_pe,
+    "Forward P/E Ratio": forward_pe,
+    "P/B Ratio": price_tobook,
     "Price to Sales": f"{price_to_sales:.2f}",
     "Price to Cashflow": f"{priceto_cashflow:.2f}",
-    "PEG Ratio": f"{peg:.2f}",
-    "EV/EBITDA": f"{ev_ebitda:.2f}",
+    "PEG Ratio": peg,
+    "EV/EBITDA": ev_ebitda,
     "Dividend Yield": dy
 }
 
 df = pd.DataFrame(data, index=["Current"])
 df = df.T
 print(df.to_string())
+
